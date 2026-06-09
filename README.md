@@ -29,6 +29,23 @@ npm run build
 npm run preview
 ```
 
+## Deploy to Vercel
+
+1. Push this repo to GitHub (see below).
+2. Go to [vercel.com](https://vercel.com) and sign in with GitHub.
+3. Click **Add New Project** → import your repository.
+4. Vercel auto-detects Vite — leave defaults (`npm run build`, output `dist`).
+5. Click **Deploy**.
+
+## Push to GitHub
+
+```bash
+# Create a new empty repo at github.com/new (name it e.g. recruitbd), then:
+git remote add origin https://github.com/YOUR_USERNAME/recruitbd.git
+git branch -M main
+git push -u origin main
+```
+
 ## LinkedIn Note
 
 LinkedIn does not allow scraping job postings without their official API. This app reminds you to manually check each company's LinkedIn Jobs page on a schedule you configure in Settings.
