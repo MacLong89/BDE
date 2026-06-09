@@ -41,7 +41,7 @@ npm run preview
 
 ```bash
 # Create a new empty repo at github.com/new (name it e.g. recruitbd), then:
-git remote add origin https://github.com/YOUR_USERNAME/recruitbd.git
+git remote add origin https://github.com/MacLong89/recruitbd.git
 git branch -M main
 git push -u origin main
 ```
