@@ -17,11 +17,18 @@ import {
   SUBMISSION_STATUS_COLORS,
   SUBMISSION_STATUS_LABELS,
 } from '../constants/labels'
+import { SHOW_CANDIDATES } from '../constants/features'
 
 export function Dashboard() {
   const { data, setView, getCompany, getCandidate } = useApp()
 
-  const reminders = useMemo(() => computeReminders(data).slice(0, 5), [data])
+  const reminders = useMemo(
+    () =>
+      computeReminders(data)
+        .filter((r) => SHOW_CANDIDATES || r.type !== 'candidate_followup')
+        .slice(0, 5),
+    [data],
+  )
 
   const openRoles = data.roles.filter((r) => r.status === 'open')
   const activeSubmissions = data.submissions.filter(
@@ -41,18 +48,26 @@ export function Dashboard() {
       icon: Briefcase,
       color: 'bg-rose-50 text-rose-600',
     },
-    {
-      label: 'Candidates',
-      value: data.candidates.length,
-      icon: UserCircle,
-      color: 'bg-fuchsia-50 text-fuchsia-600',
-    },
-    {
-      label: 'Active Submissions',
-      value: activeSubmissions.length,
-      icon: Send,
-      color: 'bg-pink-100 text-pink-700',
-    },
+    ...(SHOW_CANDIDATES
+      ? [
+          {
+            label: 'Candidates',
+            value: data.candidates.length,
+            icon: UserCircle,
+            color: 'bg-fuchsia-50 text-fuchsia-600',
+          },
+        ]
+      : []),
+    ...(SHOW_CANDIDATES
+      ? [
+          {
+            label: 'Active Submissions',
+            value: activeSubmissions.length,
+            icon: Send,
+            color: 'bg-pink-100 text-pink-700',
+          },
+        ]
+      : []),
   ]
 
   const recentCompanies = [...data.companies]
@@ -68,7 +83,7 @@ export function Dashboard() {
         </p>
       </div>
 
-      <div className="mb-8 grid grid-cols-4 gap-4">
+      <div className={`mb-8 grid gap-4 ${SHOW_CANDIDATES ? 'grid-cols-4' : 'grid-cols-2'}`}>
         {stats.map(({ label, value, icon: Icon, color }) => (
           <div
             key={label}
@@ -124,7 +139,7 @@ export function Dashboard() {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      if (r.type === 'candidate_followup') {
+                      if (SHOW_CANDIDATES && r.type === 'candidate_followup') {
                         setView({ type: 'candidate-detail', id: r.entityId })
                       } else {
                         setView({ type: 'company-detail', id: r.entityId })
@@ -178,6 +193,7 @@ export function Dashboard() {
           </div>
         </div>
 
+        {SHOW_CANDIDATES && (
         <div className="col-span-2 rounded-xl border border-pink-100 bg-white/80 shadow-sm backdrop-blur-sm">
           <div className="border-b border-slate-100 px-5 py-4">
             <h2 className="font-semibold text-slate-900">Active Pipeline</h2>
@@ -233,6 +249,7 @@ export function Dashboard() {
             </table>
           </div>
         </div>
+        )}
       </div>
     </div>
   )

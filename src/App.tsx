@@ -6,6 +6,8 @@ import { CandidateList } from './components/candidates/CandidateList'
 import { CandidateDetail } from './components/candidates/CandidateDetail'
 import { Reminders } from './components/Reminders'
 import { Settings } from './components/Settings'
+import { TodoBoard } from './components/TodoBoard'
+import { SHOW_CANDIDATES } from './constants/features'
 import { useNotifications } from './hooks/useNotifications'
 import { useApp } from './store/AppContext'
 
@@ -22,9 +24,11 @@ function AppContent() {
       case 'company-detail':
         return <CompanyDetail id={view.id} />
       case 'candidates':
-        return <CandidateList />
+        return SHOW_CANDIDATES ? <CandidateList /> : <Dashboard />
       case 'candidate-detail':
-        return <CandidateDetail id={view.id} />
+        return SHOW_CANDIDATES ? <CandidateDetail id={view.id} /> : <Dashboard />
+      case 'todo':
+        return <TodoBoard />
       case 'reminders':
         return <Reminders />
       case 'settings':

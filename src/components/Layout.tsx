@@ -1,17 +1,20 @@
 import {
   Bell,
   Building2,
+  CheckSquare,
   LayoutDashboard,
   Settings,
   UserCircle,
 } from 'lucide-react'
 import { useMemo } from 'react'
+import { SHOW_CANDIDATES } from '../constants/features'
 import { useApp } from '../store/AppContext'
 import { computeReminders } from '../utils/reminders'
 
-const navItems = [
+const allNavItems = [
   { type: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
   { type: 'companies' as const, label: 'Companies', icon: Building2 },
+  { type: 'todo' as const, label: 'ToDo', icon: CheckSquare },
   { type: 'candidates' as const, label: 'Candidates', icon: UserCircle },
   { type: 'reminders' as const, label: 'Reminders', icon: Bell },
   { type: 'settings' as const, label: 'Settings', icon: Settings },
@@ -19,12 +22,26 @@ const navItems = [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { view, setView, data } = useApp()
-  const reminderCount = useMemo(() => computeReminders(data).length, [data])
+  const navItems = useMemo(
+    () =>
+      allNavItems.filter(
+        (item) => SHOW_CANDIDATES || item.type !== 'candidates',
+      ),
+    [],
+  )
+  const reminderCount = useMemo(
+    () =>
+      computeReminders(data).filter(
+        (r) => SHOW_CANDIDATES || r.type !== 'candidate_followup',
+      ).length,
+    [data],
+  )
 
   const isActive = (type: string) => {
     if (view.type === type) return true
     if (type === 'companies' && view.type === 'company-detail') return true
-    if (type === 'candidates' && view.type === 'candidate-detail') return true
+    if (SHOW_CANDIDATES && type === 'candidates' && view.type === 'candidate-detail')
+      return true
     return false
   }
 
@@ -67,13 +84,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         <div className="border-t border-pink-100 px-6 py-4">
           <p className="text-xs text-slate-400">
-            {data.companies.length} companies · {data.candidates.length} candidates
+            {data.companies.length} companies
+            {SHOW_CANDIDATES && ` · ${data.candidates.length} candidates`}
           </p>
         </div>
       </aside>
 
       <main className="ml-64 flex-1">
-        <div className="mx-auto max-w-6xl px-8 py-8">{children}</div>
+        <div
+          className={`mx-auto px-8 py-8 ${view.type === 'todo' ? 'max-w-7xl' : 'max-w-6xl'}`}
+        >
+          {children}
+        </div>
       </main>
     </div>
   )

@@ -15,8 +15,11 @@ import type {
   Note,
   Role,
   Submission,
+  TodoItem,
+  TodoStatus,
   View,
 } from '../types'
+import { applyColumnOrder, moveTodoInList, nextOrder, todosForColumn } from '../utils/todos'
 import { loadAppData, saveAppData } from '../utils/storage'
 
 interface AppContextValue {
@@ -45,6 +48,24 @@ interface AppContextValue {
   markLinkedInChecked: (companyId: string) => void
   getCompany: (id: string) => Company | undefined
   getCandidate: (id: string) => Candidate | undefined
+  addTodo: (title: string) => string
+  updateTodo: (
+    id: string,
+    updates: Partial<
+      Pick<
+        TodoItem,
+        'title' | 'isTimed' | 'durationMinutes' | 'timerStartedAt' | 'timerEndedAt'
+      >
+    >,
+  ) => void
+  deleteTodo: (id: string) => void
+  moveTodo: (id: string, toStatus: TodoStatus, toIndex: number) => void
+  completeTodo: (id: string) => void
+  uncompleteTodo: (id: string) => void
+  startTodoTimer: (id: string) => void
+  stopTodoTimer: (id: string) => void
+  completeTodoTimer: (id: string) => void
+  dismissTodoTimerAlert: (id: string) => void
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -236,6 +257,127 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [data.candidates],
   )
 
+  const addTodo = useCallback((title: string) => {
+    const id = uuid()
+    const ts = now()
+    setData((prev) => ({
+      ...prev,
+      todos: [
+        ...prev.todos,
+        {
+          id,
+          title: title.trim(),
+          status: 'on_deck',
+          order: nextOrder(prev.todos, 'on_deck'),
+          createdAt: ts,
+        },
+      ],
+    }))
+    return id
+  }, [])
+
+  const updateTodo = useCallback(
+    (
+      id: string,
+      updates: Partial<
+        Pick<
+          TodoItem,
+          'title' | 'isTimed' | 'durationMinutes' | 'timerStartedAt' | 'timerEndedAt'
+        >
+      >,
+    ) => {
+      setData((prev) => ({
+        ...prev,
+        todos: prev.todos.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+      }))
+    },
+    [],
+  )
+
+  const deleteTodo = useCallback((id: string) => {
+    setData((prev) => {
+      const item = prev.todos.find((t) => t.id === id)
+      if (!item) return prev
+      const remaining = prev.todos.filter((t) => t.id !== id)
+      const columnIds = todosForColumn(remaining, item.status).map((t) => t.id)
+      return {
+        ...prev,
+        todos: applyColumnOrder(remaining, item.status, columnIds, now()),
+      }
+    })
+  }, [])
+
+  const moveTodo = useCallback((id: string, toStatus: TodoStatus, toIndex: number) => {
+    setData((prev) => ({
+      ...prev,
+      todos: moveTodoInList(prev.todos, id, toStatus, toIndex, now()),
+    }))
+  }, [])
+
+  const completeTodo = useCallback((id: string) => {
+    setData((prev) => {
+      const item = prev.todos.find((t) => t.id === id)
+      if (!item || item.status === 'done') return prev
+      const ts = now()
+      const moved = moveTodoInList(prev.todos, id, 'done', 0, ts)
+      return {
+        ...prev,
+        todos: moved.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                timerStartedAt: undefined,
+                timerEndedAt: undefined,
+              }
+            : t,
+        ),
+      }
+    })
+  }, [])
+
+  const uncompleteTodo = useCallback((id: string) => {
+    setData((prev) => {
+      const item = prev.todos.find((t) => t.id === id)
+      if (!item || item.status !== 'done') return prev
+      return {
+        ...prev,
+        todos: moveTodoInList(prev.todos, id, 'on_deck', 0, now()),
+      }
+    })
+  }, [])
+
+  const startTodoTimer = useCallback((id: string) => {
+    setData((prev) => {
+      const item = prev.todos.find((t) => t.id === id)
+      if (!item?.isTimed || !item.durationMinutes || item.durationMinutes <= 0) return prev
+      const ts = now()
+      const withTimer = prev.todos.map((t) =>
+        t.id === id
+          ? { ...t, timerStartedAt: ts, timerEndedAt: undefined }
+          : t,
+      )
+      if (item.status === 'on_deck') {
+        return {
+          ...prev,
+          todos: moveTodoInList(withTimer, id, 'in_progress', 0, ts),
+        }
+      }
+      return { ...prev, todos: withTimer }
+    })
+  }, [])
+
+  const stopTodoTimer = useCallback((id: string) => {
+    updateTodo(id, { timerStartedAt: undefined })
+  }, [updateTodo])
+
+  const completeTodoTimer = useCallback((id: string) => {
+    updateTodo(id, { timerStartedAt: undefined, timerEndedAt: now() })
+  }, [updateTodo])
+
+  const dismissTodoTimerAlert = useCallback((id: string) => {
+    updateTodo(id, { timerStartedAt: undefined, timerEndedAt: undefined })
+  }, [updateTodo])
+
   const value = useMemo<AppContextValue>(
     () => ({
       data,
@@ -261,6 +403,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       markLinkedInChecked,
       getCompany,
       getCandidate,
+      addTodo,
+      updateTodo,
+      deleteTodo,
+      moveTodo,
+      completeTodo,
+      uncompleteTodo,
+      startTodoTimer,
+      stopTodoTimer,
+      completeTodoTimer,
+      dismissTodoTimerAlert,
     }),
     [
       data,
@@ -285,6 +437,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       markLinkedInChecked,
       getCompany,
       getCandidate,
+      addTodo,
+      updateTodo,
+      deleteTodo,
+      moveTodo,
+      completeTodo,
+      uncompleteTodo,
+      startTodoTimer,
+      stopTodoTimer,
+      completeTodoTimer,
+      dismissTodoTimerAlert,
     ],
   )
 

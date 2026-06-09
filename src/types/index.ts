@@ -101,11 +101,31 @@ export interface AppSettings {
   notificationsEnabled: boolean
 }
 
+export type TodoStatus = 'on_deck' | 'in_progress' | 'done'
+
+export interface TodoItem {
+  id: string
+  title: string
+  status: TodoStatus
+  order: number
+  createdAt: string
+  completedAt?: string
+  /** When true, show focus timer controls on this task */
+  isTimed?: boolean
+  /** Optional focus timer length in minutes */
+  durationMinutes?: number
+  /** ISO timestamp when the timer was started */
+  timerStartedAt?: string
+  /** ISO timestamp when the timer finished (shows alert until dismissed) */
+  timerEndedAt?: string
+}
+
 export interface AppData {
   companies: Company[]
   roles: Role[]
   candidates: Candidate[]
   submissions: Submission[]
+  todos: TodoItem[]
   settings: AppSettings
 }
 
@@ -115,5 +135,6 @@ export type View =
   | { type: 'company-detail'; id: string }
   | { type: 'candidates' }
   | { type: 'candidate-detail'; id: string }
+  | { type: 'todo' }
   | { type: 'reminders' }
   | { type: 'settings' }

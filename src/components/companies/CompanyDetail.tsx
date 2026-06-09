@@ -17,6 +17,7 @@ import {
   ROLE_STATUS_LABELS,
   SUBMISSION_STATUS_LABELS,
 } from '../../constants/labels'
+import { SHOW_CANDIDATES } from '../../constants/features'
 import type { RoleStatus, SubmissionStatus } from '../../types'
 import { useApp } from '../../store/AppContext'
 import { Badge } from '../ui/Badge'
@@ -334,6 +335,7 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
         </div>
       </div>
 
+      {SHOW_CANDIDATES && (
       <div className="rounded-xl border border-pink-100 bg-white/90 shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <h2 className="font-semibold text-slate-900">Candidate Submissions</h2>
@@ -409,6 +411,7 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
           </table>
         </div>
       </div>
+      )}
 
       <Modal title="Edit Company" open={showEdit} onClose={() => setShowEdit(false)} wide>
         <CompanyForm
@@ -492,6 +495,7 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
         </form>
       </Modal>
 
+      {SHOW_CANDIDATES && (
       <Modal
         title="Submit Candidate"
         open={showSubmissionForm}
@@ -571,6 +575,7 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
           </div>
         </form>
       </Modal>
+      )}
     </div>
   )
 }

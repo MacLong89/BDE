@@ -7,6 +7,7 @@ export const defaultAppData = (): AppData => ({
   roles: [],
   candidates: [],
   submissions: [],
+  todos: [],
   settings: {
     defaultFollowUpDays: 7,
     linkedInCheckDays: 3,

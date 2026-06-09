@@ -1,5 +1,6 @@
 import { Bell, Building2, ExternalLink, UserCircle } from 'lucide-react'
 import { useMemo } from 'react'
+import { SHOW_CANDIDATES } from '../constants/features'
 import { useApp } from '../store/AppContext'
 import { computeReminders } from '../utils/reminders'
 import { Button } from './ui/Button'
@@ -20,7 +21,13 @@ export function Reminders() {
   const { data, setView, markCompanyContacted, markCandidateContacted, markLinkedInChecked } =
     useApp()
 
-  const reminders = useMemo(() => computeReminders(data), [data])
+  const reminders = useMemo(
+    () =>
+      computeReminders(data).filter(
+        (r) => SHOW_CANDIDATES || r.type !== 'candidate_followup',
+      ),
+    [data],
+  )
 
   const grouped = {
     high: reminders.filter((r) => r.priority === 'high'),
@@ -88,7 +95,7 @@ export function Reminders() {
                             variant="secondary"
                             size="sm"
                             onClick={() => {
-                              if (r.type === 'candidate_followup') {
+                              if (SHOW_CANDIDATES && r.type === 'candidate_followup') {
                                 setView({ type: 'candidate-detail', id: r.entityId })
                               } else {
                                 setView({ type: 'company-detail', id: r.entityId })
