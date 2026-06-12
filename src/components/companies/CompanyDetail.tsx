@@ -11,8 +11,6 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import {
-  COMPANY_STATUS_COLORS,
-  COMPANY_STATUS_LABELS,
   ROLE_STATUS_COLORS,
   ROLE_STATUS_LABELS,
   SUBMISSION_STATUS_LABELS,
@@ -25,6 +23,7 @@ import { Button } from '../ui/Button'
 import { FieldGroup, Input, Label, Select, Textarea } from '../ui/Input'
 import { Modal } from '../ui/Modal'
 import { CompanyForm } from './CompanyForm'
+import { CompanyStatusSelect } from './CompanyStatusSelect'
 
 interface CompanyDetailProps {
   id: string
@@ -152,9 +151,10 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-slate-900">{company.name}</h1>
-            <Badge
-              label={COMPANY_STATUS_LABELS[company.status]}
-              colorClass={COMPANY_STATUS_COLORS[company.status]}
+            <CompanyStatusSelect
+              companyId={company.id}
+              status={company.status}
+              size="md"
             />
           </div>
           {company.industry && (

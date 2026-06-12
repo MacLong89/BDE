@@ -2,15 +2,14 @@ import { format, parseISO } from 'date-fns'
 import { ExternalLink, Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import {
-  COMPANY_STATUS_COLORS,
   COMPANY_STATUS_LABELS,
 } from '../../constants/labels'
 import { useApp } from '../../store/AppContext'
-import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
 import { Input } from '../ui/Input'
 import { CompanyForm } from './CompanyForm'
+import { CompanyStatusSelect } from './CompanyStatusSelect'
 
 export function CompanyList() {
   const { data, setView } = useApp()
@@ -107,11 +106,11 @@ export function CompanyList() {
                         <p className="text-xs text-slate-400">{c.industry}</p>
                       )}
                     </td>
-                    <td className="px-5 py-4">
-                      <Badge
-                        label={COMPANY_STATUS_LABELS[c.status]}
-                        colorClass={COMPANY_STATUS_COLORS[c.status]}
-                      />
+                    <td
+                      className="px-5 py-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <CompanyStatusSelect companyId={c.id} status={c.status} />
                     </td>
                     <td className="px-5 py-4 text-slate-600">
                       {c.contactName ?? '—'}

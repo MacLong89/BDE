@@ -1,7 +1,9 @@
 import { format, parseISO } from 'date-fns'
 import { Clock, GripVertical, Pause, Play, Trash2 } from 'lucide-react'
 import type { DragEvent } from 'react'
+import { useEffect } from 'react'
 import type { TodoItem, TodoStatus } from '../../types'
+import { useTodoColumnEnter } from '../../hooks/useTodoColumnEnter'
 import { useApp } from '../../store/AppContext'
 import {
   formatCountdown,
@@ -26,6 +28,7 @@ interface TodoCardProps {
   onDrop: (e: DragEvent, index: number) => void
   onDropAfter: (e: DragEvent, index: number) => void
   onDropIndex: (index: number) => void
+  onColumnEnter?: (status: TodoStatus) => void
 }
 
 export function TodoCard({
@@ -42,6 +45,7 @@ export function TodoCard({
   onDrop,
   onDropAfter,
   onDropIndex,
+  onColumnEnter,
 }: TodoCardProps) {
   const {
     updateTodo,
@@ -52,6 +56,12 @@ export function TodoCard({
     stopTodoTimer,
     dismissTodoTimerAlert,
   } = useApp()
+
+  const { entering, direction } = useTodoColumnEnter(status)
+
+  useEffect(() => {
+    if (entering) onColumnEnter?.(status)
+  }, [entering, status, onColumnEnter])
 
   const running = isTimerRunning(item)
   const remaining = running ? getTimerRemainingSeconds(item, now) : null
@@ -76,6 +86,13 @@ export function TodoCard({
   return (
     <div>
       {dropHighlight && <div className="mb-2 h-1 rounded-full bg-pink-400" />}
+      {entering && (
+        <div className="todo-move-dots" aria-hidden="true">
+          <span className={`todo-move-dot todo-move-dot--${status}`} />
+          <span className={`todo-move-dot todo-move-dot--${status}`} />
+          <span className={`todo-move-dot todo-move-dot--${status}`} />
+        </div>
+      )}
       <div
         draggable={!running}
         onDragStart={(e) => onDragStart(e, item)}
@@ -87,6 +104,12 @@ export function TodoCard({
         }}
         onDrop={(e) => onDrop(e, index)}
         className={`group rounded-lg border bg-white p-3 shadow-sm transition-all ${
+          entering
+            ? direction === 'forward'
+              ? 'todo-card-enter-forward'
+              : 'todo-card-enter-backward'
+            : ''
+        } ${
           draggingId === item.id
             ? 'border-pink-300 opacity-40'
             : running

@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react'
-import { useMemo, useState, type DragEvent } from 'react'
+import { useCallback, useMemo, useState, type DragEvent } from 'react'
 import { TODO_COLUMN_STYLES, TODO_COLUMNS } from '../constants/todo'
 import { useTodoTimers } from '../hooks/useTodoTimers'
 import type { TodoItem, TodoStatus } from '../types'
@@ -24,6 +24,12 @@ export function TodoBoard() {
     status: TodoStatus
     index: number
   } | null>(null)
+  const [flashingColumn, setFlashingColumn] = useState<TodoStatus | null>(null)
+
+  const handleColumnEnter = useCallback((status: TodoStatus) => {
+    setFlashingColumn(status)
+    window.setTimeout(() => setFlashingColumn(null), 550)
+  }, [])
 
   const columns = useMemo(
     () =>
@@ -96,7 +102,9 @@ export function TodoBoard() {
           return (
             <div
               key={status}
-              className={`flex min-h-[420px] flex-col rounded-xl border ${styles.border} bg-white/80 shadow-sm backdrop-blur-sm`}
+              className={`flex min-h-[420px] flex-col rounded-xl border ${styles.border} bg-white/80 shadow-sm backdrop-blur-sm ${
+                flashingColumn === status ? 'todo-column-flash' : ''
+              }`}
               onDragOver={(e) => {
                 e.preventDefault()
                 e.dataTransfer.dropEffect = 'move'
@@ -153,6 +161,7 @@ export function TodoBoard() {
                     onDrop={(e, i) => handleDrop(e, status, i)}
                     onDropAfter={(e, i) => handleDrop(e, status, i)}
                     onDropIndex={(i) => setDropTarget({ status, index: i })}
+                    onColumnEnter={handleColumnEnter}
                   />
                 ))}
               </div>
