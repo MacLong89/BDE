@@ -9,5 +9,18 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      window.setTimeout(function () {
+        var root = document.getElementById('root')
+        if (root && !root.innerHTML.trim()) {
+          root.innerHTML =
+            '<div style="padding:2rem;font-family:system-ui,sans-serif;max-width:36rem;margin:2rem auto;line-height:1.5;color:#334155">' +
+            '<h1 style="font-size:1.25rem;color:#0f172a;margin:0 0 0.75rem">RecruitBD did not load</h1>' +
+            '<p style="margin:0 0 0.75rem">If you are working locally, run <code>npm run dev</code> in the project folder, then open <a href="http://localhost:5173/">http://localhost:5173/</a>. Do not open <code>index.html</code> directly from your file explorer.</p>' +
+            '<p style="margin:0;font-size:0.875rem;color:#64748b">Check the browser console (F12) for errors if this message persists.</p>' +
+            '</div>'
+        }
+      }, 5000)
+    </script>
   </body>
 </html>

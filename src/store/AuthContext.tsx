@@ -30,19 +30,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null)
-      setLoading(false)
-    })
+    let finished = false
+    const finishLoading = () => {
+      if (!finished) {
+        finished = true
+        setLoading(false)
+      }
+    }
+
+    const timeout = window.setTimeout(finishLoading, 8000)
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setUser(data.session?.user ?? null)
+        finishLoading()
+      })
+      .catch(() => finishLoading())
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      setLoading(false)
+      finishLoading()
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      window.clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signIn = useCallback(async (email: string, password: string) => {
