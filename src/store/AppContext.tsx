@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -19,13 +20,18 @@ import type {
   TodoStatus,
   View,
 } from '../types'
+import { loadDataForUser, saveUserData } from '../utils/cloudStorage'
+import { defaultAppData } from '../utils/storage'
 import { applyColumnOrder, moveTodoInList, nextOrder, todosForColumn } from '../utils/todos'
-import { loadAppData, saveAppData } from '../utils/storage'
+import { useAuth } from './AuthContext'
 
 interface AppContextValue {
   data: AppData
+  dataLoading: boolean
+  syncStatus: 'idle' | 'saving' | 'saved' | 'error'
   view: View
   setView: (view: View) => void
+  replaceData: (data: AppData) => void
   addCompany: (company: Omit<Company, 'id' | 'createdAt' | 'updatedAt' | 'notes'>) => string
   updateCompany: (id: string, updates: Partial<Company>) => void
   deleteCompany: (id: string) => void
@@ -71,12 +77,60 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<AppData>(loadAppData)
+  const { user } = useAuth()
+  const [data, setData] = useState<AppData>(defaultAppData())
+  const [dataLoading, setDataLoading] = useState(true)
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [view, setView] = useState<View>({ type: 'dashboard' })
+  const saveTimer = useRef<number | null>(null)
 
   useEffect(() => {
-    saveAppData(data)
-  }, [data])
+    if (!user) {
+      setData(defaultAppData())
+      setDataLoading(false)
+      setSyncStatus('idle')
+      return
+    }
+
+    let cancelled = false
+    setDataLoading(true)
+
+    loadDataForUser(user.id)
+      .then((loaded) => {
+        if (!cancelled) setData(loaded)
+      })
+      .catch(() => {
+        if (!cancelled) setSyncStatus('error')
+      })
+      .finally(() => {
+        if (!cancelled) setDataLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user || dataLoading) return
+
+    if (saveTimer.current) window.clearTimeout(saveTimer.current)
+    setSyncStatus('saving')
+
+    saveTimer.current = window.setTimeout(() => {
+      saveUserData(user.id, data)
+        .then(() => setSyncStatus('saved'))
+        .catch(() => setSyncStatus('error'))
+    }, 800)
+
+    return () => {
+      if (saveTimer.current) window.clearTimeout(saveTimer.current)
+    }
+  }, [data, user?.id, dataLoading])
+
+  const replaceData = useCallback((next: AppData) => {
+    setData(next)
+  }, [])
 
   const now = () => new Date().toISOString()
 
@@ -381,8 +435,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue>(
     () => ({
       data,
+      dataLoading,
+      syncStatus,
       view,
       setView,
+      replaceData,
       addCompany,
       updateCompany,
       deleteCompany,
@@ -416,7 +473,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }),
     [
       data,
+      dataLoading,
+      syncStatus,
       view,
+      replaceData,
       addCompany,
       updateCompany,
       deleteCompany,

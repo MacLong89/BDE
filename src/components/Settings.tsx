@@ -1,12 +1,12 @@
 import { Bell, Download, Upload } from 'lucide-react'
 import { useRef } from 'react'
+import { defaultAppData } from '../utils/storage'
 import { useApp } from '../store/AppContext'
-import { loadAppData, saveAppData } from '../utils/storage'
 import { Button } from './ui/Button'
 import { FieldGroup, Input, Label } from './ui/Input'
 
 export function Settings() {
-  const { data, updateSettings } = useApp()
+  const { data, updateSettings, replaceData } = useApp()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const requestNotifications = async () => {
@@ -32,8 +32,11 @@ export function Settings() {
     reader.onload = (ev) => {
       try {
         const imported = JSON.parse(ev.target?.result as string)
-        saveAppData({ ...loadAppData(), ...imported })
-        window.location.reload()
+        replaceData({
+          ...defaultAppData(),
+          ...imported,
+          settings: { ...defaultAppData().settings, ...imported.settings },
+        })
       } catch {
         alert('Invalid backup file.')
       }
@@ -106,7 +109,8 @@ export function Settings() {
         <div className="rounded-xl border border-pink-100 bg-white/90 p-6 shadow-sm">
           <h2 className="font-semibold text-slate-900">Data Backup</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Export or import your data. All data is stored locally in your browser.
+            Your data syncs to your account in the cloud. Export a JSON backup anytime, or
+            import to restore from a file.
           </p>
           <div className="mt-4 flex gap-3">
             <Button variant="secondary" onClick={exportData}>

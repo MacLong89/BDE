@@ -7,13 +7,30 @@ import { CandidateDetail } from './components/candidates/CandidateDetail'
 import { Reminders } from './components/Reminders'
 import { Settings } from './components/Settings'
 import { TodoBoard } from './components/TodoBoard'
+import { LoginPage } from './components/auth/LoginPage'
 import { SHOW_CANDIDATES } from './constants/features'
 import { useNotifications } from './hooks/useNotifications'
+import { useAuth } from './store/AuthContext'
 import { useApp } from './store/AppContext'
 
+function LoadingScreen({ label }: { label: string }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-center">
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-pink-200 border-t-pink-600" />
+        <p className="mt-4 text-sm text-slate-500">{label}</p>
+      </div>
+    </div>
+  )
+}
+
 function AppContent() {
-  const { view } = useApp()
+  const { view, dataLoading } = useApp()
   useNotifications()
+
+  if (dataLoading) {
+    return <LoadingScreen label="Loading your data..." />
+  }
 
   const renderView = () => {
     switch (view.type) {
@@ -40,5 +57,15 @@ function AppContent() {
 }
 
 export default function App() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return <LoadingScreen label="Checking session..." />
+  }
+
+  if (!user) {
+    return <LoginPage />
+  }
+
   return <AppContent />
 }

@@ -3,11 +3,13 @@ import {
   Building2,
   CheckSquare,
   LayoutDashboard,
+  LogOut,
   Settings,
   UserCircle,
 } from 'lucide-react'
 import { useMemo } from 'react'
 import { SHOW_CANDIDATES } from '../constants/features'
+import { useAuth } from '../store/AuthContext'
 import { useApp } from '../store/AppContext'
 import { computeReminders } from '../utils/reminders'
 
@@ -21,7 +23,8 @@ const allNavItems = [
 ]
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { view, setView, data } = useApp()
+  const { view, setView, data, syncStatus } = useApp()
+  const { user, signOut } = useAuth()
   const navItems = useMemo(
     () =>
       allNavItems.filter(
@@ -83,10 +86,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="border-t border-pink-100 px-6 py-4">
-          <p className="text-xs text-slate-400">
+          <p className="truncate text-xs text-slate-500">{user?.email}</p>
+          <p className="mt-1 text-xs text-slate-400">
             {data.companies.length} companies
             {SHOW_CANDIDATES && ` · ${data.candidates.length} candidates`}
           </p>
+          <p className="mt-1 text-xs text-slate-400">
+            {syncStatus === 'saving' && 'Saving...'}
+            {syncStatus === 'saved' && 'All changes saved'}
+            {syncStatus === 'error' && 'Sync error — retrying on next change'}
+            {syncStatus === 'idle' && 'Ready'}
+          </p>
+          <button
+            type="button"
+            onClick={() => signOut()}
+            className="mt-3 flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-pink-700"
+          >
+            <LogOut className="h-3.5 w-3.5" /> Sign out
+          </button>
         </div>
       </aside>
 
