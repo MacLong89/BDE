@@ -4,28 +4,20 @@ import { Button } from '../ui/Button'
 import { FieldGroup, Input, Label } from '../ui/Input'
 
 export function LoginPage() {
-  const { signIn, signUp } = useAuth()
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const { continueWithEmail } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setMessage('')
     setSubmitting(true)
 
-    if (mode === 'signin') {
-      const result = await signIn(email.trim(), password)
-      if (result.error) setError(result.error)
-    } else {
-      const result = await signUp(email.trim(), password)
-      if (result.error) setError(result.error)
-      if (result.message) setMessage(result.message)
-    }
+    const result = await continueWithEmail(email.trim(), password)
+    if (result.error) setError(result.error)
+
     setSubmitting(false)
   }
 
@@ -59,7 +51,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-900">RecruitBD</h1>
-            <p className="text-sm text-slate-500">Sign in to access your data anywhere</p>
+            <p className="text-sm text-slate-500">Enter your email to get started</p>
           </div>
         </div>
 
@@ -70,6 +62,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
               id="email"
               type="email"
               autoComplete="email"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -80,10 +73,10 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
             <Input
               id="password"
               type="password"
-              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              autoComplete="current-password"
+              placeholder="Pick something easy to remember"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              minLength={6}
               required
             />
           </FieldGroup>
@@ -91,34 +84,14 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
           {error && (
             <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
           )}
-          {message && (
-            <p className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-              {message}
-            </p>
-          )}
 
           <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting
-              ? 'Please wait...'
-              : mode === 'signin'
-                ? 'Sign In'
-                : 'Create Account'}
+            {submitting ? 'Please wait...' : 'Continue'}
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-slate-500">
-          {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}{' '}
-          <button
-            type="button"
-            className="font-medium text-pink-600 hover:text-pink-700"
-            onClick={() => {
-              setMode(mode === 'signin' ? 'signup' : 'signin')
-              setError('')
-              setMessage('')
-            }}
-          >
-            {mode === 'signin' ? 'Sign up' : 'Sign in'}
-          </button>
+        <p className="mt-4 text-center text-xs text-slate-400">
+          New here? We&apos;ll create your account automatically.
         </p>
       </div>
     </div>

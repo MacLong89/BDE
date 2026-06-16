@@ -1,4 +1,7 @@
 -- Run this in the Supabase SQL Editor for your project.
+--
+-- Auth (Dashboard): Authentication → Providers → Email
+--   - Turn OFF "Confirm email" so sign-in works immediately without verification.
 
 create table if not exists public.user_app_data (
   user_id uuid primary key references auth.users(id) on delete cascade,

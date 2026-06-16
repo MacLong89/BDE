@@ -34,7 +34,10 @@ Open http://localhost:5173 in your browser.
    VITE_SUPABASE_ANON_KEY=your-anon-key
    ```
 4. In the Supabase **SQL Editor**, run the script in `supabase/schema.sql`
-5. Restart the dev server and create an account on the login screen
+5. For easy family/friends login (no email verification):
+   - **Authentication → Providers → Email** — turn off **Confirm email**
+   - Optional: lower **Minimum password length** if you want very short passwords
+6. Restart the dev server and sign in with any email + password (new accounts are created automatically)
 
 On first sign-in, any data already in your browser is uploaded to your account automatically.
 
