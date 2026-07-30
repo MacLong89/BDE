@@ -36,6 +36,7 @@ interface AppContextValue {
   updateCompany: (id: string, updates: Partial<Company>) => void
   deleteCompany: (id: string) => void
   addCompanyNote: (companyId: string, content: string) => void
+  deleteCompanyNote: (companyId: string, noteId: string) => void
   addRole: (role: Omit<Role, 'id' | 'createdAt'>) => string
   updateRole: (id: string, updates: Partial<Role>) => void
   deleteRole: (id: string) => void
@@ -175,6 +176,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       companies: prev.companies.map((c) =>
         c.id === companyId
           ? { ...c, notes: [note, ...c.notes], updatedAt: now() }
+          : c,
+      ),
+    }))
+  }, [])
+
+  const deleteCompanyNote = useCallback((companyId: string, noteId: string) => {
+    setData((prev) => ({
+      ...prev,
+      companies: prev.companies.map((c) =>
+        c.id === companyId
+          ? {
+              ...c,
+              notes: c.notes.filter((n) => n.id !== noteId),
+              updatedAt: now(),
+            }
           : c,
       ),
     }))
@@ -444,6 +460,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateCompany,
       deleteCompany,
       addCompanyNote,
+      deleteCompanyNote,
       addRole,
       updateRole,
       deleteRole,
@@ -481,6 +498,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateCompany,
       deleteCompany,
       addCompanyNote,
+      deleteCompanyNote,
       addRole,
       updateRole,
       deleteRole,

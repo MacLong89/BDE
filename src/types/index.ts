@@ -3,6 +3,7 @@ export type CompanyStatus =
   | 'reached_out'
   | 'in_conversation'
   | 'meeting_scheduled'
+  | 'contract_in_negotiation'
   | 'active_client'
   | 'on_hold'
   | 'not_interested'

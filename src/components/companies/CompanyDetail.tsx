@@ -16,7 +16,7 @@ import {
   SUBMISSION_STATUS_LABELS,
 } from '../../constants/labels'
 import { SHOW_CANDIDATES } from '../../constants/features'
-import type { RoleStatus, SubmissionStatus } from '../../types'
+import type { Role, RoleStatus, SubmissionStatus } from '../../types'
 import { useApp } from '../../store/AppContext'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
@@ -29,6 +29,28 @@ interface CompanyDetailProps {
   id: string
 }
 
+const emptyRoleForm = () => ({
+  title: '',
+  status: 'open' as RoleStatus,
+  salary: '',
+  location: '',
+  linkedInUrl: '',
+  notes: '',
+  openedAt: new Date().toISOString().split('T')[0],
+})
+
+function roleToForm(role: Role) {
+  return {
+    title: role.title,
+    status: role.status,
+    salary: role.salary ?? '',
+    location: role.location ?? '',
+    linkedInUrl: role.linkedInUrl ?? '',
+    notes: role.notes ?? '',
+    openedAt: role.openedAt.split('T')[0],
+  }
+}
+
 export function CompanyDetail({ id }: CompanyDetailProps) {
   const {
     data,
@@ -36,6 +58,7 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
     getCompany,
     getCandidate,
     addCompanyNote,
+    deleteCompanyNote,
     deleteCompany,
     addRole,
     updateRole,
@@ -51,16 +74,9 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
   const [noteText, setNoteText] = useState('')
   const [showEdit, setShowEdit] = useState(false)
   const [showRoleForm, setShowRoleForm] = useState(false)
+  const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
   const [showSubmissionForm, setShowSubmissionForm] = useState(false)
-  const [roleForm, setRoleForm] = useState({
-    title: '',
-    status: 'open' as RoleStatus,
-    salary: '',
-    location: '',
-    linkedInUrl: '',
-    notes: '',
-    openedAt: new Date().toISOString().split('T')[0],
-  })
+  const [roleForm, setRoleForm] = useState(emptyRoleForm)
   const [submissionForm, setSubmissionForm] = useState({
     roleId: '',
     candidateId: '',
@@ -93,29 +109,48 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
     setNoteText('')
   }
 
-  const handleAddRole = (e: React.FormEvent) => {
+  const openAddRole = () => {
+    setEditingRoleId(null)
+    setRoleForm(emptyRoleForm())
+    setShowRoleForm(true)
+  }
+
+  const openEditRole = (role: Role) => {
+    setEditingRoleId(role.id)
+    setRoleForm(roleToForm(role))
+    setShowRoleForm(true)
+  }
+
+  const closeRoleForm = () => {
+    setShowRoleForm(false)
+    setEditingRoleId(null)
+    setRoleForm(emptyRoleForm())
+  }
+
+  const handleSaveRole = (e: React.FormEvent) => {
     e.preventDefault()
     if (!roleForm.title.trim()) return
-    addRole({
-      companyId: id,
-      title: roleForm.title,
+    const payload = {
+      title: roleForm.title.trim(),
       status: roleForm.status,
       salary: roleForm.salary || undefined,
       location: roleForm.location || undefined,
       linkedInUrl: roleForm.linkedInUrl || undefined,
       notes: roleForm.notes || undefined,
       openedAt: new Date(roleForm.openedAt).toISOString(),
-    })
-    setShowRoleForm(false)
-    setRoleForm({
-      title: '',
-      status: 'open',
-      salary: '',
-      location: '',
-      linkedInUrl: '',
-      notes: '',
-      openedAt: new Date().toISOString().split('T')[0],
-    })
+    }
+    if (editingRoleId) {
+      updateRole(editingRoleId, payload)
+    } else {
+      addRole({ companyId: id, ...payload })
+    }
+    closeRoleForm()
+  }
+
+  const handleCheckLinkedInJobs = () => {
+    if (!company.linkedInJobsUrl) return
+    markLinkedInChecked(id)
+    window.open(company.linkedInJobsUrl, '_blank', 'noopener,noreferrer')
   }
 
   const handleAddSubmission = (e: React.FormEvent) => {
@@ -210,28 +245,23 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
         <div className="rounded-xl border border-pink-100 bg-white/90 p-4">
           <p className="text-xs font-medium uppercase text-slate-400">LinkedIn Jobs</p>
           {company.linkedInJobsUrl ? (
-            <div className="mt-1 flex items-center gap-2">
-              <a
-                href={company.linkedInJobsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+            <div className="mt-1">
+              <button
+                type="button"
+                onClick={handleCheckLinkedInJobs}
                 className="flex items-center gap-1 text-sm font-medium text-pink-600 hover:text-pink-700"
               >
-                View Jobs <ExternalLink className="h-3 w-3" />
-              </a>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => markLinkedInChecked(id)}
-              >
-                Mark Checked
-              </Button>
+                Check LinkedIn Jobs <ExternalLink className="h-3 w-3" />
+              </button>
+              <p className="mt-0.5 text-xs text-slate-400">
+                Opens jobs page and clears the reminder
+              </p>
             </div>
           ) : (
             <p className="mt-1 text-sm text-slate-500">No LinkedIn jobs URL set</p>
           )}
           {company.lastLinkedInCheckAt && (
-            <p className="text-xs text-slate-400">
+            <p className="mt-1 text-xs text-slate-400">
               Last checked {format(parseISO(company.lastLinkedInCheckAt), 'MMM d')}
             </p>
           )}
@@ -264,12 +294,26 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
                 company.notes.map((note) => (
                   <div
                     key={note.id}
-                    className="rounded-lg bg-pink-50 px-4 py-3 text-sm"
+                    className="group flex items-start justify-between gap-3 rounded-lg bg-pink-50 px-4 py-3 text-sm"
                   >
-                    <p className="text-slate-700">{note.content}</p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      {format(parseISO(note.createdAt), 'MMM d, yyyy h:mm a')}
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-slate-700">{note.content}</p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        {format(parseISO(note.createdAt), 'MMM d, yyyy h:mm a')}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Delete this note?')) {
+                          deleteCompanyNote(id, note.id)
+                        }
+                      }}
+                      className="shrink-0 text-slate-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 focus:opacity-100"
+                      aria-label="Delete note"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 ))
               )}
@@ -282,7 +326,7 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
             <h2 className="flex items-center gap-2 font-semibold text-slate-900">
               <Briefcase className="h-4 w-4" /> Open Roles ({openRoles.length})
             </h2>
-            <Button size="sm" onClick={() => setShowRoleForm(true)}>
+            <Button size="sm" onClick={openAddRole}>
               <Plus className="h-3 w-3" /> Add Role
             </Button>
           </div>
@@ -293,37 +337,49 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
               </p>
             ) : (
               roles.map((role) => (
-                <div key={role.id} className="flex items-center justify-between px-5 py-4">
-                  <div>
-                    <p className="font-medium text-slate-900">{role.title}</p>
+                <div
+                  key={role.id}
+                  className="flex items-center justify-between gap-3 px-5 py-4"
+                >
+                  <button
+                    type="button"
+                    onClick={() => openEditRole(role)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <p className="font-medium text-slate-900 hover:text-pink-700">
+                      {role.title}
+                    </p>
                     <p className="text-xs text-slate-400">
                       Opened {format(parseISO(role.openedAt), 'MMM d, yyyy')}
                       {role.location && ` · ${role.location}`}
+                      {role.salary && ` · ${role.salary}`}
                     </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <select
-                      className="rounded border border-slate-200 px-2 py-1 text-xs"
-                      value={role.status}
-                      onChange={(e) =>
-                        updateRole(role.id, { status: e.target.value as RoleStatus })
-                      }
-                    >
-                      {Object.entries(ROLE_STATUS_LABELS).map(([v, l]) => (
-                        <option key={v} value={v}>
-                          {l}
-                        </option>
-                      ))}
-                    </select>
+                    {role.notes && (
+                      <p className="mt-1 line-clamp-1 text-xs text-slate-500">
+                        {role.notes}
+                      </p>
+                    )}
+                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
                     <Badge
                       label={ROLE_STATUS_LABELS[role.status]}
                       colorClass={ROLE_STATUS_COLORS[role.status]}
                     />
                     <button
+                      type="button"
+                      onClick={() => openEditRole(role)}
+                      className="text-slate-400 hover:text-pink-600"
+                      aria-label="Edit role"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
                         if (confirm('Delete this role?')) deleteRole(role.id)
                       }}
                       className="text-slate-400 hover:text-red-500"
+                      aria-label="Delete role"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -421,8 +477,12 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
         />
       </Modal>
 
-      <Modal title="Add Role" open={showRoleForm} onClose={() => setShowRoleForm(false)}>
-        <form onSubmit={handleAddRole}>
+      <Modal
+        title={editingRoleId ? 'Edit Role' : 'Add Role'}
+        open={showRoleForm}
+        onClose={closeRoleForm}
+      >
+        <form onSubmit={handleSaveRole}>
           <FieldGroup>
             <Label>Role Title *</Label>
             <Input
@@ -479,6 +539,18 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
               placeholder="https://linkedin.com/jobs/..."
             />
           </FieldGroup>
+          {roleForm.linkedInUrl && (
+            <div className="-mt-2 mb-4">
+              <a
+                href={roleForm.linkedInUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-pink-600 hover:text-pink-700"
+              >
+                Open job posting <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          )}
           <FieldGroup>
             <Label>Notes</Label>
             <Textarea
@@ -487,10 +559,10 @@ export function CompanyDetail({ id }: CompanyDetailProps) {
             />
           </FieldGroup>
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="secondary" onClick={() => setShowRoleForm(false)}>
+            <Button type="button" variant="secondary" onClick={closeRoleForm}>
               Cancel
             </Button>
-            <Button type="submit">Add Role</Button>
+            <Button type="submit">{editingRoleId ? 'Save Changes' : 'Add Role'}</Button>
           </div>
         </form>
       </Modal>
